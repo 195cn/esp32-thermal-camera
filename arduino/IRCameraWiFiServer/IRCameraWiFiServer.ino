@@ -51,19 +51,11 @@ void setup()
   // Connect to the WiFi network
   WiFi.begin(SSID, PWD);
   WiFi.setHostname("esp32thing1");
-  int retry = 0;
+
   while (WiFi.status() != WL_CONNECTED)
   {
     delay(1000);
-    retry += 1;
     Serial.print(".");
-    if (retry > 4)
-    {
-      // Retry after 5 seconds
-      Serial.println("");
-      WiFi.begin(SSID, PWD);
-      retry = 0;
-    }
   }
 
   Serial.println("");
@@ -105,9 +97,6 @@ void setup()
   webSocket.begin();
   webSocket.onEvent(webSocketEvent);
 }
-
-int value = 0;
-int dataVal = 0;
 
 void loop()
 {

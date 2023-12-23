@@ -138,34 +138,6 @@
             return output;
         }
 
-        function heatMapColorforValue(value, avgLowTemp, avgHighTemp) {
-            let h;
-            let l = 50;
-            let s;
-            let a = 1;
-            let threshold = 38;
-            let diff = avgHighTemp - avgLowTemp;
-            if (diff < 4) {
-                if (avgHighTemp < 75) {
-                    threshold = 100 - (diff * 4);
-                } else if (avgHighTemp > 75) {
-                    threshold = (diff * 4);
-                }
-            }
-            if (value < threshold) {//35) {
-                h = 200 + (1.0 - (value / threshold)) * 30;
-                l = 50 + (value / threshold) * 30;
-                s = 60 + (value / threshold) * 35;
-                a = 0.8;
-            } else {
-                h = 10 + 40 * (1.0 - ((value - threshold) / threshold));
-                l = 40 + 50 * (1.0 - ((value - threshold) / threshold));//50 * (1.0 - ((value - threshold) / threshold)) + 50;
-                s = 98;
-                a = 0.95;
-            }
-            return `hsla( ${h}, ${s}%, ${l}%, ${a})`;
-        }
-
         function interpolateData(input, rowLength) {
             const output = [];
             let rowNum = 1;
@@ -214,27 +186,6 @@
             }
         }
 
-        function temperatureToGray(temperature) {
-            // 将温度值映射到0~255的灰度值  
-            let i = Math.round((temperature / 100) * 255);
-            let h = 2 * 3.14 * i / 100;
-
-            if (i < 50)
-                s = 1.5 * i;
-            else
-                s = (100 - i) * 1.5;
-
-            let V1 = Math.cos(i);
-            let V2 = Math.sin(i);
-
-
-            let r = i - 0.204 * v1 + 0.612 * v2;
-            let g = i - 0.204 * v1 - 0.612 * v2;
-            let b = i + 0.408 * v1;
-
-            return "rgb(" + r * 256 + ", " + g * 256 + ", " + b * 256 + ")";
-        }
-
         function temp2color(temp) {
 
             let max_temp = 30;
@@ -251,12 +202,12 @@
             let g = color_list[i][1];
             let b = color_list[i][2];
 
-            return "rgb(" + r + ", " + g + ", " + b + ")";
+            return 'rgb(' + r + ', ' + g + ', ' + b + ')';
         }
 
-        // 主程序 ````````````````````````````````````````````````````````````````````````````````````````
+        // main ````````````````````````````````````````````````````````````````````````````````````````
 
-        // 网络连接配置
+        // web
         let url = 'ws://thermal.local:81';
         if (typeof ipAddress !== 'undefined') {
             // Android doesn't support mDNS, use ipAddress if provided
@@ -271,13 +222,10 @@
             console.log('WebSocket Error ' + error);
         };
 
-        // 温度解析
+        // temperature
         let avgHighTemp = 0;
         let avgLowTemp = 0;
-        let highTarget = -100;
-        let lowTarget = 200;
-        let high = -100;
-        let low = 200;
+
         let counter = 30;
 
         // Log messages from the server
@@ -287,11 +235,11 @@
             }
             // console.log(e.data);
 
-            // 解压缩，插补
+            // unpress
             const values = decompress(e.data, 32);
             const tempValues = interpolateData(values, 32);
 
-            // 计算最高平均温度
+            // avgHighTemp
             const sortedValues = values.slice().sort();
             avgHighTemp = 0;
             for (let w = sortedValues.length - 3; w > sortedValues.length - 10; w -= 1) {
@@ -299,7 +247,7 @@
             }
             avgHighTemp = avgHighTemp / 7;
 
-            //计算最低平均温度
+            // avgLowTemp
             avgLowTemp = 0;
             for (let w = 4; w < 24; w += 1) {
                 avgLowTemp += sortedValues[w];
@@ -307,64 +255,17 @@
             avgLowTemp = avgLowTemp / 20;
 
             if (counter >= 20) {
-                // 网页显示最高温和最低温
                 document.getElementById('temperature').innerText = 'High: ' + parseInt(avgHighTemp) + ' C | Low: ' + parseInt(avgLowTemp) + ' C';
-
-                highTarget = -100;
-                lowTarget = 200;
-
-                for (let i = 0; i < values.length; i += 1) {
-                    if (values[i] < 120 && values[i] > highTarget) {
-                        highTarget = parseInt(values[i]);
-                    }
-                    if (values[i] < lowTarget) {
-                        lowTarget = parseInt(values[i]);
-                    }
-                }
-                if (highTarget - lowTarget < 10) {
-                    highTarget += 5;
-                }
-                // high += 2;
-                lowTarget += 1;
                 counter = 0;
-                // return;
             }
             counter += 1;
-
-
-            if (Math.abs(low - avgLowTemp) < 1.5) {
-                // do nothing
-            } else if (low === 200) {
-                low = avgLowTemp;
-            } else if (low > avgLowTemp) {
-                low -= 1;
-            } else if (low < avgLowTemp) {
-                low += 1;
-            }
-            if (Math.abs(high - avgHighTemp) < 1.5) {
-                // do nothing
-            } else if (high === -100) {
-                high = avgHighTemp;
-            } else if (high > avgHighTemp) {
-                high -= 1;
-            } else if (high < avgHighTemp) {
-                high += 1;
-            }
 
             var c2 = document.getElementById('myCanvas');
             var c2_context = c2.getContext('2d');
             let xPos = startX;
             let yPos = 0;
             for (let i = 0; i < tempValues.length; i += 1) {
-                // let value = ((tempValues[i] - low) / (high - low)) * 100;
-                // c2_context.fillStyle = heatMapColorforValue(value, low, high);
-
-                // let value = ((tempValues[i] - avgLowTemp) * 100 / (avgHighTemp - avgLowTemp)) ;
-                // c2_context.fillStyle = heatMapColorforValue(tempValues[i], -100, 100);
-
-                // c2_context.fillStyle = temperatureToGray(tempValues[i])
-                c2_context.fillStyle = temp2color(tempValues[i])
-
+                c2_context.fillStyle = temp2color(tempValues[i]);
                 c2_context.fillRect(xPos, yPos, 10, 10);
                 yPos += 10;
                 if (i > 0 && (i + 1) % 63 === 0) {
@@ -374,7 +275,7 @@
             }
         };
 
-        // 主程序结束 ````````````````````````````````````````````````````````````````````````````````````````
+        // main over ````````````````````````````````````````````````````````````````````````````````````````
 
     </script>
 </head>
@@ -387,7 +288,6 @@
 </body>
 <script>
     if (typeof ipAddress !== 'undefined') {
-        // the variable is defined
         document.getElementById('ip').innerText = 'IP: ' + ipAddress;
     }
 </script>
