@@ -24,278 +24,358 @@
         }
     </style>
     <script>
-    let startX = 0;
-    let moveX = 10;
-    const positive = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z'];
-    const negative = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z'];
+        let startX = 0;
+        let moveX = 10;
+        const positive = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z'];
+        const negative = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z'];
+        const color_list =
+            [
+                [90, 128, 255],
+                [80, 128, 255],
+                [70, 128, 255],
+                [60, 135, 255],
+                [50, 135, 255],
+                [45, 155, 255],
+                [45, 170, 255],
+                [40, 180, 255],
 
-    function decompress(compressed, rowLength) {
-        const parts = compressed.split('.');
-        let output = [];
-        let result = parts[1];
-        // First character is the decimal precision
-        let decimals = parseInt(parts[0].substring(0, 1));
-        // Second character is the accuracy, e.g. 5 would round to nearest 5
-        let accuracy = parseInt(parts[0].substring(1, 2));
-        // Value of the first reading
-        let start = parseInt(parts[0].substring(2, parts[0].length));
-        start = start / Math.pow(10.0, decimals);
-        // Push the first reading into the result array
-        output.push(start);
+                [40, 190, 244],
+                [40, 200, 239],
+                [40, 210, 243],
+                [40, 215, 235],
+                [40, 220, 243],
+                [40, 220, 244],
+                [40, 220, 232],
+                [40, 220, 216],
 
-        // bbbb is compressed to 4b, the numeric value 4 is stored in the multiplier variable
-        let multiplier = '';
-        let counter = 1;
+                [45, 220, 176],
+                [45, 220, 111],
+                [45, 220, 102],
+                [50, 220, 90],
+                [70, 220, 100],
+                [100, 225, 110],
+                [120, 230, 113],
+                [140, 235, 114],
 
-        // Use Aa-Zz values to calculate the diff from the previous value
-        for (let n = 0; n < result.length; n += 1) {
-            let found = false;
-            let indexOfItem = positive.indexOf(result[n]);
+                [180, 240, 128],
+                [190, 240, 128],
+                [195, 230, 128],
+                [200, 215, 128],
+                [210, 200, 128],
+                [220, 185, 128],
+                [230, 160, 128],
+                [255, 128, 128]
+            ];
 
-            if (indexOfItem === -1) {
-                indexOfItem = negative.indexOf(result[n]);
-                if (indexOfItem >= 0) {
+        function decompress(compressed, rowLength) {
+            const parts = compressed.split('.');
+            let output = [];
+            let result = parts[1];
+            // First character is the decimal precision
+            let decimals = parseInt(parts[0].substring(0, 1));
+            // Second character is the accuracy, e.g. 5 would round to nearest 5
+            let accuracy = parseInt(parts[0].substring(1, 2));
+            // Value of the first reading
+            let start = parseInt(parts[0].substring(2, parts[0].length));
+            start = start / Math.pow(10.0, decimals);
+            // Push the first reading into the result array
+            output.push(start);
+
+            // bbbb is compressed to 4b, the numeric value 4 is stored in the multiplier variable
+            let multiplier = '';
+            let counter = 1;
+
+            // Use Aa-Zz values to calculate the diff from the previous value
+            for (let n = 0; n < result.length; n += 1) {
+                let found = false;
+                let indexOfItem = positive.indexOf(result[n]);
+
+                if (indexOfItem === -1) {
+                    indexOfItem = negative.indexOf(result[n]);
+                    if (indexOfItem >= 0) {
+                        found = true;
+                        indexOfItem = -indexOfItem;
+                    }
+                } else {
                     found = true;
-                    indexOfItem = -indexOfItem;
                 }
-            } else {
-                found = true;
-            }
-            // If not Aa-Zz it will be a numeric multiplier
-            if (!found) {
-                multiplier += result[n];
-            } else {
-                // Found a Aa-Zz match! Calculate the numeric value.
-                if (Math.abs(indexOfItem) > 0) {
-                    indexOfItem = indexOfItem * accuracy;
-                }
-                indexOfItem = indexOfItem / Math.pow(10, decimals);
+                // If not Aa-Zz it will be a numeric multiplier
+                if (!found) {
+                    multiplier += result[n];
+                } else {
+                    // Found a Aa-Zz match! Calculate the numeric value.
+                    if (Math.abs(indexOfItem) > 0) {
+                        indexOfItem = indexOfItem * accuracy;
+                    }
+                    indexOfItem = indexOfItem / Math.pow(10, decimals);
 
-                multiplier = parseInt(multiplier);
-
-                if (counter > 1 && counter % rowLength === 0) {
-                    start = output[counter - rowLength];
-                }
-                counter += 1;
-                // console.log(result[n], indexOfItem);
-                start += indexOfItem;
-                output.push(parseFloat(parseFloat(start).toFixed(decimals)));
-
-                // Turn 4b into bbbb
-                while (multiplier > 1) {
+                    multiplier = parseInt(multiplier);
 
                     if (counter > 1 && counter % rowLength === 0) {
                         start = output[counter - rowLength];
                     }
                     counter += 1;
+                    // console.log(result[n], indexOfItem);
                     start += indexOfItem;
                     output.push(parseFloat(parseFloat(start).toFixed(decimals)));
-                    multiplier -= 1;
-                }
-                multiplier = '';
 
-            }
+                    // Turn 4b into bbbb
+                    while (multiplier > 1) {
 
-        }
-        return output;
-    }
-    function heatMapColorforValue(value, avgLowTemp, avgHighTemp) {
-        let h;
-        let l = 50;
-        let s;
-        let a = 1;
-        let threshold = 38;
-        let diff = avgHighTemp - avgLowTemp;
-        if (diff < 4) {
-            if (avgHighTemp < 75) {
-                threshold = 100 - (diff * 4);
-            } else if(avgHighTemp > 75) {
-                threshold = (diff * 4);
-            }
-        }
-        if (value < threshold) {//35) {
-            h = 200 + (1.0 - (value / threshold)) * 30;
-            l = 50 + (value / threshold) * 30;
-            s = 60 + (value / threshold) * 35;
-            a = 0.8;
-        } else {
-            h = 10 + 40 * (1.0 - ((value - threshold) / threshold));
-            l = 40 + 50 * (1.0 - ((value - threshold) / threshold));//50 * (1.0 - ((value - threshold) / threshold)) + 50;
-            s = 98;
-            a = 0.95;
-        }
-        return `hsla( ${h}, ${s}%, ${l}%, ${a})`;
-    }
-
-    function percentToRGB(percent) {
-        if (percent === 100) {
-            percent = 99
-        }
-        var r, g, b;
-        var result = '';
-        if (percent < 50) {
-            // blue to yellow
-            r = Math.floor(255 * ((percent - 30) / 20));//Math.floor(255 * ((50 - percent % 50) / 100));
-            g = Math.floor(180 * ((percent) / 50));//Math.floor(80 * ((65 - percent) / 50));;//Math.floor(200 * (percent / 50) - 50);//Math.floor(255 * (percent / 100));//Math.floor(255 * (percent / 50));;
-            b = Math.floor(255 * ((75 - percent) / 50));
-            result = 'rgba(' + r + ',' + g + ',' + b + ', 0.9)';
-        } else {
-            // yellow to red
-            r = 255;
-            g = Math.floor(200 * ((50 - percent % 50) / 50));
-            b = Math.floor(100 * ((50 - percent % 50) / 50));//0;
-            result = 'rgba(' + r + ',' + g + ',' + b + ', 0.9)';
-        }
-        return result;
-    }
-
-    function interpolateData(input, rowLength) {
-        const output = [];
-        let rowNum = 1;
-        for (let n = 0; n < input.length; n += 1) {
-            //output.push(n % rowLength);
-            if (n % rowLength === 0) {
-                output.push((input[n] + input[n + 1]) / 2)            
-            } else if (n > 0) {
-                output.push((input[n] + input[n - 1]) / 2)
-            } else {
-                output.push(input[n]);
-            }
-            
-            if ((n + 1) % rowLength === 0) {
-                if (input.length - n > rowLength) {
-                    for (let r = 1; r <= rowLength * 2 - 1; r++) {
-                        const roundedA = ((rowNum - 1) * rowLength) + Math.floor((r - 1) / 2);
-                        const roundedB = ((rowNum - 1) * rowLength) + Math.floor((r - 1) / 2);
-                        const topA = input[roundedA];
-                        const topB = input[roundedB];
-                        const roundedC = (rowNum * rowLength) + Math.floor((r - 1) / 2);
-                        const roundedD = (rowNum * rowLength) + Math.floor((r - 1) / 2);
-                        const bottomA = input[roundedC];
-                        const bottomB = input[roundedD];
-                        //output.push(0);
-                        output.push((topA + topB + bottomA + bottomB) / 4);
+                        if (counter > 1 && counter % rowLength === 0) {
+                            start = output[counter - rowLength];
+                        }
+                        counter += 1;
+                        start += indexOfItem;
+                        output.push(parseFloat(parseFloat(start).toFixed(decimals)));
+                        multiplier -= 1;
                     }
-                    rowNum += 1;
+                    multiplier = '';
+
                 }
-                // Do nothing
+
+            }
+            return output;
+        }
+
+        function heatMapColorforValue(value, avgLowTemp, avgHighTemp) {
+            let h;
+            let l = 50;
+            let s;
+            let a = 1;
+            let threshold = 38;
+            let diff = avgHighTemp - avgLowTemp;
+            if (diff < 4) {
+                if (avgHighTemp < 75) {
+                    threshold = 100 - (diff * 4);
+                } else if (avgHighTemp > 75) {
+                    threshold = (diff * 4);
+                }
+            }
+            if (value < threshold) {//35) {
+                h = 200 + (1.0 - (value / threshold)) * 30;
+                l = 50 + (value / threshold) * 30;
+                s = 60 + (value / threshold) * 35;
+                a = 0.8;
             } else {
-                //output.push(0);
-                output.push((input[n] + input[n + 1]) / 2)
+                h = 10 + 40 * (1.0 - ((value - threshold) / threshold));
+                l = 40 + 50 * (1.0 - ((value - threshold) / threshold));//50 * (1.0 - ((value - threshold) / threshold)) + 50;
+                s = 98;
+                a = 0.95;
             }
-        }
-        return output;
-    }
-    let url = 'ws://thermal.local:81';
-    if (typeof ipAddress !== 'undefined') {
-        // Android doesn't support mDNS, use ipAddress if provided
-        url = 'ws://' + ipAddress + ':81';
-    }
-    let connection = new WebSocket(url);
-    connection.onopen = function () {
-        connection.send('Ping'); // Send the message 'Ping' to the server
-    };
-    // Log errors
-    connection.onerror = function (error) {
-        console.log('WebSocket Error ' + error);
-    };
-    let avgHighTemp = 0;
-    let avgLowTemp = 0;
-    let highTarget = -100;
-    let lowTarget = 200;
-    let high = -100;
-    let low = 200;
-    let counter = 30;
-    // Log messages from the server
-    connection.onmessage = function (e) {
-        if (e.data.length < 100) {
-            return;
-        }
-        // console.log(e.data);
-        const values = decompress(e.data, 32);
-        const tempValues = interpolateData(values, 32);
-        const sortedValues = values.slice().sort();
-        avgHighTemp = 0;
-        for (let w = sortedValues.length - 3; w > sortedValues.length - 10; w -= 1) {
-            avgHighTemp += sortedValues[w];
-        }
-        avgHighTemp = avgHighTemp / 7;
-        avgLowTemp = 0;
-        for (let w = 4; w < 24; w += 1) {
-            avgLowTemp += sortedValues[w];
-        }
-        avgLowTemp = avgLowTemp / 20;
-        if (counter >= 20) {
-            let avgHighTempF = avgHighTemp * 1.8 + 32;
-            avgHighTempF = parseInt(avgHighTempF * 10) / 10;
-            
-            let avgLowTempF = avgLowTemp * 1.8 + 32;
-            avgLowTempF = parseInt(avgLowTempF * 10) / 10;
-            document.getElementById('temperature').innerText = 'High: ' + avgHighTempF + ' F | Low: ' + avgLowTempF + ' F';
-            highTarget = -100;
-            lowTarget = 200;
-            //console.log(JSON.stringify(tempValues));
-            for (let i = 0; i < values.length; i += 1) {
-                if (values[i] < 120 && values[i] > highTarget) {
-                    highTarget = parseInt(values[i]);
-                }
-                if (values[i] < lowTarget) {
-                    lowTarget = parseInt(values[i]);
-                }
-            }
-            if (highTarget - lowTarget < 10) {
-                highTarget += 5;
-            }
-            // high += 2;
-            lowTarget += 1;
-            counter = 0;
-            return;
-        }
-        counter += 1;
-        if (Math.abs(low - avgLowTemp) < 1.5) {
-            // do nothing
-        } else if (low === 200) {
-            low = avgLowTemp;
-        } else if (low > avgLowTemp) {
-            low -= 1;
-        } else if (low < avgLowTemp) {
-            low += 1;
-        }
-        if (Math.abs(high - avgHighTemp) < 1.5) {
-            // do nothing
-        } else if (high === -100) {
-            high = avgHighTemp;
-        } else if (high > avgHighTemp) {
-            high -= 1;
-        } else if (high < avgHighTemp) {
-            high += 1;
+            return `hsla( ${h}, ${s}%, ${l}%, ${a})`;
         }
 
-        var c2 = document.getElementById('myCanvas');
-        var c2_context = c2.getContext('2d');
-        let xPos = startX;
-        let yPos = 0;
-        for (let i = 0; i < tempValues.length; i += 1) {
-            let value = ((tempValues[i] - low) / (high - low)) * 100;
-            c2_context.fillStyle = heatMapColorforValue(value, low, high);
-            c2_context.fillRect(xPos, yPos, 10, 10);
-            yPos += 10;
-            if (i > 0 && (i + 1) % 63 === 0) {
-                xPos += moveX;
-                yPos = 0;
+        function interpolateData(input, rowLength) {
+            const output = [];
+            let rowNum = 1;
+            for (let n = 0; n < input.length; n += 1) {
+                //output.push(n % rowLength);
+                if (n % rowLength === 0) {
+                    output.push((input[n] + input[n + 1]) / 2)
+                } else if (n > 0) {
+                    output.push((input[n] + input[n - 1]) / 2)
+                } else {
+                    output.push(input[n]);
+                }
+
+                if ((n + 1) % rowLength === 0) {
+                    if (input.length - n > rowLength) {
+                        for (let r = 1; r <= rowLength * 2 - 1; r++) {
+                            const roundedA = ((rowNum - 1) * rowLength) + Math.floor((r - 1) / 2);
+                            const roundedB = ((rowNum - 1) * rowLength) + Math.floor((r - 1) / 2);
+                            const topA = input[roundedA];
+                            const topB = input[roundedB];
+                            const roundedC = (rowNum * rowLength) + Math.floor((r - 1) / 2);
+                            const roundedD = (rowNum * rowLength) + Math.floor((r - 1) / 2);
+                            const bottomA = input[roundedC];
+                            const bottomB = input[roundedD];
+                            //output.push(0);
+                            output.push((topA + topB + bottomA + bottomB) / 4);
+                        }
+                        rowNum += 1;
+                    }
+                    // Do nothing
+                } else {
+                    //output.push(0);
+                    output.push((input[n] + input[n + 1]) / 2)
+                }
+            }
+            return output;
+        }
+
+        function flip() {
+            if (startX === 0) {
+                startX = 460;
+                moveX = -10;
+            } else {
+                startX = 0;
+                moveX = 10;
             }
         }
-    };
 
-    function flip() {
-        if (startX === 0) {
-            startX = 460;
-            moveX = -10;
-        } else {
-            startX = 0;
-            moveX = 10;
+        function temperatureToGray(temperature) {
+            // 将温度值映射到0~255的灰度值  
+            let i = Math.round((temperature / 100) * 255);
+            let h = 2 * 3.14 * i / 100;
+
+            if (i < 50)
+                s = 1.5 * i;
+            else
+                s = (100 - i) * 1.5;
+
+            let V1 = Math.cos(i);
+            let V2 = Math.sin(i);
+
+
+            let r = i - 0.204 * v1 + 0.612 * v2;
+            let g = i - 0.204 * v1 - 0.612 * v2;
+            let b = i + 0.408 * v1;
+
+            return "rgb(" + r * 256 + ", " + g * 256 + ", " + b * 256 + ")";
         }
-    }
+
+        function temp2color(temp) {
+
+            let max_temp = 30;
+            let min_temp = 5;
+
+
+            let i = parseInt((temp - min_temp) / (max_temp - min_temp) * 32);
+            if (i < 0)
+                i = 0;
+            if (i > 31)
+                i = 31;
+
+            let r = color_list[i][0];
+            let g = color_list[i][1];
+            let b = color_list[i][2];
+
+            return "rgb(" + r + ", " + g + ", " + b + ")";
+        }
+
+        // 主程序 ````````````````````````````````````````````````````````````````````````````````````````
+
+        // 网络连接配置
+        let url = 'ws://thermal.local:81';
+        if (typeof ipAddress !== 'undefined') {
+            // Android doesn't support mDNS, use ipAddress if provided
+            url = 'ws://' + ipAddress + ':81';
+        }
+        let connection = new WebSocket(url);
+        connection.onopen = function () {
+            connection.send('Ping'); // Send the message 'Ping' to the server
+        };
+        // Log errors
+        connection.onerror = function (error) {
+            console.log('WebSocket Error ' + error);
+        };
+
+        // 温度解析
+        let avgHighTemp = 0;
+        let avgLowTemp = 0;
+        let highTarget = -100;
+        let lowTarget = 200;
+        let high = -100;
+        let low = 200;
+        let counter = 30;
+
+        // Log messages from the server
+        connection.onmessage = function (e) {
+            if (e.data.length < 100) {
+                return;
+            }
+            // console.log(e.data);
+
+            // 解压缩，插补
+            const values = decompress(e.data, 32);
+            const tempValues = interpolateData(values, 32);
+
+            // 计算最高平均温度
+            const sortedValues = values.slice().sort();
+            avgHighTemp = 0;
+            for (let w = sortedValues.length - 3; w > sortedValues.length - 10; w -= 1) {
+                avgHighTemp += sortedValues[w];
+            }
+            avgHighTemp = avgHighTemp / 7;
+
+            //计算最低平均温度
+            avgLowTemp = 0;
+            for (let w = 4; w < 24; w += 1) {
+                avgLowTemp += sortedValues[w];
+            }
+            avgLowTemp = avgLowTemp / 20;
+
+            if (counter >= 20) {
+                // 网页显示最高温和最低温
+                document.getElementById('temperature').innerText = 'High: ' + parseInt(avgHighTemp) + ' C | Low: ' + parseInt(avgLowTemp) + ' C';
+
+                highTarget = -100;
+                lowTarget = 200;
+
+                for (let i = 0; i < values.length; i += 1) {
+                    if (values[i] < 120 && values[i] > highTarget) {
+                        highTarget = parseInt(values[i]);
+                    }
+                    if (values[i] < lowTarget) {
+                        lowTarget = parseInt(values[i]);
+                    }
+                }
+                if (highTarget - lowTarget < 10) {
+                    highTarget += 5;
+                }
+                // high += 2;
+                lowTarget += 1;
+                counter = 0;
+                // return;
+            }
+            counter += 1;
+
+
+            if (Math.abs(low - avgLowTemp) < 1.5) {
+                // do nothing
+            } else if (low === 200) {
+                low = avgLowTemp;
+            } else if (low > avgLowTemp) {
+                low -= 1;
+            } else if (low < avgLowTemp) {
+                low += 1;
+            }
+            if (Math.abs(high - avgHighTemp) < 1.5) {
+                // do nothing
+            } else if (high === -100) {
+                high = avgHighTemp;
+            } else if (high > avgHighTemp) {
+                high -= 1;
+            } else if (high < avgHighTemp) {
+                high += 1;
+            }
+
+            var c2 = document.getElementById('myCanvas');
+            var c2_context = c2.getContext('2d');
+            let xPos = startX;
+            let yPos = 0;
+            for (let i = 0; i < tempValues.length; i += 1) {
+                // let value = ((tempValues[i] - low) / (high - low)) * 100;
+                // c2_context.fillStyle = heatMapColorforValue(value, low, high);
+
+                // let value = ((tempValues[i] - avgLowTemp) * 100 / (avgHighTemp - avgLowTemp)) ;
+                // c2_context.fillStyle = heatMapColorforValue(tempValues[i], -100, 100);
+
+                // c2_context.fillStyle = temperatureToGray(tempValues[i])
+                c2_context.fillStyle = temp2color(tempValues[i])
+
+                c2_context.fillRect(xPos, yPos, 10, 10);
+                yPos += 10;
+                if (i > 0 && (i + 1) % 63 === 0) {
+                    xPos += moveX;
+                    yPos = 0;
+                }
+            }
+        };
+
+        // 主程序结束 ````````````````````````````````````````````````````````````````````````````````````````
+
     </script>
 </head>
 
@@ -311,4 +391,5 @@
         document.getElementById('ip').innerText = 'IP: ' + ipAddress;
     }
 </script>
+
 </html>
